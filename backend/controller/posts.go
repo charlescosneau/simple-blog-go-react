@@ -2,16 +2,34 @@ package controller
 
 import (
 	"backend/service"
+	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
-func GetAllArticles() {
+type Articles struct {
+	Id      int    `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+	UserId  int    `json:"user_id"`
+}
+
+type Article struct {
+	Id      int    `json:"id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}
+
+func GetAllArticles(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
 	db := service.DbConnect()
 	var (
-		id      int
-		title   string
-		content string
-		userId  int
+		id          int
+		title       string
+		content     string
+		userId      int
+		finalResult []Articles
 	)
 
 	result, err := db.Query("SELECT * FROM article")
@@ -24,18 +42,25 @@ func GetAllArticles() {
 				fmt.Println(err)
 				return
 			}
-			fmt.Printf("%v, %v, %v, %v\n", id, title, content, userId)
+			fmt.Printf("%v, %v, %v, %v\n\n\n", id, title, content, userId)
+			finalResult = append(finalResult, Articles{id, title, content, userId})
+		}
+		err := json.NewEncoder(w).Encode(finalResult)
+		if err != nil {
+			return
 		}
 	}
 }
 
-func GetOneArticle(selectedArticleId int) {
+func GetOneArticle(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	db := service.DbConnect()
 
 	var (
-		id      int
-		title   string
-		content string
+		id                int
+		title             string
+		content           string
+		selectedArticleId = r.URL.Query().Get("id")
 	)
 
 	query := `SELECT id, title, content FROM article WHERE id=$1`
@@ -51,7 +76,10 @@ func GetOneArticle(selectedArticleId int) {
 			}
 			fmt.Printf("%v, %v, %v\n", id, title, content)
 		}
-
+		err := json.NewEncoder(w).Encode(Article{Id: id, Title: title, Content: content})
+		if err != nil {
+			return
+		}
 	}
 }
 
