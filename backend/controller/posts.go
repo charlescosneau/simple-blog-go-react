@@ -37,9 +37,9 @@ func GetAllArticles(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	} else {
 		for result.Next() {
-			error := result.Scan(&id, &title, &content, &userId)
-			if error != nil {
-				fmt.Println(err)
+			err2 := result.Scan(&id, &title, &content, &userId)
+			if err2 != nil {
+				fmt.Println(err2)
 				return
 			}
 			fmt.Printf("%v, %v, %v, %v\n\n\n", id, title, content, userId)
@@ -83,14 +83,34 @@ func GetOneArticle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func CreateArticle(articleTitle string, articleContent string, articleUserId int) {
+func CreateArticle(w http.ResponseWriter, r *http.Request) {
+
+	type IntendedBody struct {
+		ID      int    `json:"id"`
+		Title   string `json:"title"`
+		Content string `json:"content"`
+	}
+
+	i := IntendedBody{}
+
+	w.Header().Set("Content-Type", "application/json")
 	db := service.DbConnect()
 
-	query := `INSERT INTO article ($1, $2, $3)`
-	_, err := db.Query(query, articleTitle, articleContent, articleUserId)
+	err := json.NewDecoder(r.Body).Decode(&i)
 	if err != nil {
-		fmt.Println(err)
+		return
+	}
+	
+	fmt.Printf("%v", i)
+
+	query := `INSERT INTO article (title, content, userid) VALUES ($1, $2, $3)`
+	_, err2 := db.Query(query, i.Title, i.Content, i.ID)
+	if err2 != nil {
+		fmt.Println(err2)
 	} else {
-		fmt.Println("Artcile ajouté avec succès !")
+		err := json.NewEncoder(w).Encode("Article created !")
+		if err != nil {
+			return
+		}
 	}
 }
